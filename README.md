@@ -37,7 +37,7 @@ git clone <repo-url> .opencode/skills/yandex-wordstat
 1. Перейдите на https://oauth.yandex.ru/client/new
 2. Платформа: Веб-сервисы
 3. Redirect URI: https://oauth.yandex.ru/verification_code
-4. Доступы: Яндекс.Direct
+4. Доступы: Использование API Вордстата
 
 ### 2. Конфигурация
 
@@ -114,10 +114,9 @@ wordstat_reports/
     └── wordstat_2026-03-05_10-30-15.md
 ```
 
-## API Яндекс.Direct
+## API Вордстата
 
-Wordstat API является частью Яндекс.Direct API. Подробная документация:
-https://yandex.ru/dev/direct/doc/dg-v4/reference/Wordstat.html
+Подробная документация: https://yandex.ru/support2/wordstat/ru/content/api-wordstat
 
 ---
 
