@@ -41,7 +41,7 @@ git clone <repo-url> .opencode/skills/yandex-wordstat
 
 ### 2. Конфигурация
 
-При первом запуске будет создан файл `wordstat_config.json`:
+При первом запуске в текущей директории будет создан файл `wordstat_config.json`:
 
 ```json
 {
