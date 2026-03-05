@@ -1,0 +1,18 @@
+# Config files
+wordstat_config.json
+wordstat_token.json
+yandex_direct_token.json
+
+# Reports
+wordstat_reports/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
