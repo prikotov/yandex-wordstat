@@ -9,7 +9,8 @@ function parseArgs(array $argv): array
         'geo' => null,
         'type' => 'freq',
         'limit' => null,
-        'pages' => 12
+        'period' => 'monthly',
+        'count' => 12
     ];
     
     $i = 1;
@@ -22,8 +23,10 @@ function parseArgs(array $argv): array
             $result['type'] = $argv[++$i];
         } elseif (in_array($arg, ['--limit', '-l']) && isset($argv[$i + 1])) {
             $result['limit'] = (int)$argv[++$i];
-        } elseif (in_array($arg, ['--pages', '-p']) && isset($argv[$i + 1])) {
-            $result['pages'] = (int)$argv[++$i];
+        } elseif (in_array($arg, ['--period', '-p']) && isset($argv[$i + 1])) {
+            $result['period'] = $argv[++$i];
+        } elseif (in_array($arg, ['--count', '-c']) && isset($argv[$i + 1])) {
+            $result['count'] = (int)$argv[++$i];
         } elseif (!str_starts_with($arg, '-')) {
             $result['phrase'] = $arg;
         }
@@ -39,14 +42,16 @@ if (!$args['phrase']) {
     echo "\n  Использование:\n";
     echo "    php wordstat.php [опции] <фраза>\n\n";
     echo "  Опции:\n";
-    echo "    -g, --geo <id>     Регион (1=Москва, 2=СПб, 225=Россия)\n";
-    echo "    -t, --type <type>  Тип: freq, similar, history\n";
-    echo "    -l, --limit <n>    Лимит записей\n";
-    echo "    -p, --pages <n>    Месяцев для history (по умолчанию 12)\n\n";
+    echo "    -g, --geo <id>      Регион (1=Москва, 2=СПб, 225=Россия)\n";
+    echo "    -t, --type <type>   Тип: freq, similar, history\n";
+    echo "    -l, --limit <n>     Лимит записей\n";
+    echo "    -p, --period <p>    Период для history: daily, weekly, monthly (по умолчанию)\n";
+    echo "    -c, --count <n>     Количество периодов для history (по умолчанию 12)\n\n";
     echo "  Примеры:\n";
     echo "    php wordstat.php \"купить ноутбук\"\n";
     echo "    php wordstat.php -t similar -l 20 \"seo\"\n";
-    echo "    php wordstat.php -t history -p 24 \"маркетинг\"\n";
+    echo "    php wordstat.php -t history -p daily -c 30 \"маркетинг\"\n";
+    echo "    php wordstat.php -t history -p weekly -c 8 \"opencode\"\n";
     exit(1);
 }
 
@@ -80,9 +85,10 @@ try {
             break;
             
         case 'history':
-            $months = $args['pages'] ?? 12;
-            $data = $client->getDynamics($args['phrase'], $args['geo'], $months);
-            $title = "Динамика запросов";
+            $count = $args['count'] ?? 12;
+            $period = $args['period'] ?? 'monthly';
+            $data = $client->getDynamics($args['phrase'], $args['geo'], $period, $count);
+            $title = "Динамика запросов ($period)";
             break;
             
         default:

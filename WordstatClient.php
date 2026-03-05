@@ -274,14 +274,24 @@ class WordstatClient
         return $data;
     }
     
-    public function getDynamics(string $phrase, ?string $geo = null, int $months = 12): array
+    public function getDynamics(string $phrase, ?string $geo = null, string $period = 'monthly', int $count = 12): array
     {
-        $fromDate = date('Y-m-01', strtotime("-$months months"));
-        $toDate = date('Y-m-t', strtotime('last month'));
+        $fromDate = match ($period) {
+            'daily' => date('Y-m-d', strtotime("-$count days")),
+            'weekly' => date('Y-m-d', strtotime('last monday', strtotime("-$count weeks"))),
+            'monthly' => date('Y-m-01', strtotime("-$count months")),
+            default => throw new Exception("Неизвестный период: $period. Используйте: daily, weekly, monthly")
+        };
+        
+        $toDate = match ($period) {
+            'daily' => date('Y-m-d', strtotime('yesterday')),
+            'weekly' => date('Y-m-d', strtotime('last sunday')),
+            'monthly' => date('Y-m-t', strtotime('last month'))
+        };
         
         $params = [
             'phrase' => $phrase,
-            'period' => 'monthly',
+            'period' => $period,
             'fromDate' => $fromDate,
             'toDate' => $toDate
         ];
@@ -296,11 +306,12 @@ class WordstatClient
         
         if (isset($result['dynamics'])) {
             foreach ($result['dynamics'] as $item) {
-                $data[] = [
-                    'month' => substr($item['date'], 0, 7),
+                $row = [
+                    'date' => $item['date'],
                     'shows' => (int)$item['count'],
                     'share' => round(($item['share'] ?? 0) * 100, 2)
                 ];
+                $data[] = $row;
             }
         }
         
