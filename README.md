@@ -140,3 +140,7 @@ wordstat_reports/
 ## API Вордстата
 
 Подробная документация: https://yandex.ru/support2/wordstat/ru/content/api-wordstat
+
+---
+
+> Постановка задач, архитектура, ревью — [Dmitry Prikotov](https://prikotov.pro/), реализация — GLM-5 в [OpenCode](https://opencode.ai)
