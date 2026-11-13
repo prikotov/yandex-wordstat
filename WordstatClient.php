@@ -63,22 +63,21 @@ final class WordstatClient
 
     /**
      * Следит, чтобы секреты (конфиг с ключом) и отчёты не попали в git.
-     * Защищает каталог скилла и корень репозитория (раскладка TasK); текущий каталог —
-     * только если он вне этих корней (не плодим .gitignore в поддиректориях).
+     * Защищает корень установки (каталог скилла standalone или корень репозитория
+     * в раскладке TasK); текущий каталог — только если он вне корня установки.
      */
     public static function checkGitignore(): void
     {
         $skillDir = __DIR__;
-        $dirs = [$skillDir];
+        $cwd = getcwd();
         $outer = dirname(__DIR__, 4); // раскладка TasK: docs/agents/skills/yandex-wordstat
         $outerIsRepo = is_dir($outer . '/.git');
-        if ($outerIsRepo && $outer !== $skillDir) {
-            $dirs[] = $outer;
-        }
-        $cwd = getcwd();
-        $insideSkill = $cwd === $skillDir || str_starts_with($cwd . '/', $skillDir . '/');
-        $insideOuter = $outerIsRepo && ($cwd === $outer || str_starts_with($cwd . '/', $outer . '/'));
-        if (!$insideSkill && !$insideOuter) {
+        $skillInsideOuter = $outerIsRepo && str_starts_with($skillDir . '/', $outer . '/');
+
+        // Если скилл внутри репозитория — достаточно его корневого .gitignore.
+        $covered = $skillInsideOuter ? $outer : $skillDir;
+        $dirs = [$covered];
+        if ($cwd !== $covered && !str_starts_with($cwd . '/', $covered . '/')) {
             $dirs[] = $cwd;
         }
         foreach (array_unique($dirs) as $dir) {
