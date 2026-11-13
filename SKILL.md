@@ -1,6 +1,6 @@
 ---
 name: yandex-wordstat
-description: Анализ поисковых запросов через Яндекс.Wordstat
+description: Анализ поисковых запросов через Яндекс.Wordstat (Yandex Search API v2)
 ---
 
 ## Когда использовать
@@ -9,82 +9,109 @@ description: Анализ поисковых запросов через Янд�
 - Анализ частотности поисковых запросов
 - Поиск похожих запросов
 - Анализ сезонности запросов
+- Региональное распределение интереса
+
+> **Важно (2026):** старое API `api.wordstat.yandex.net` (OAuth) закрыто Яндексом.
+> Wordstat работает через **Yandex Search API v2** в Yandex Cloud: аутентификация API-ключом
+> сервисного аккаунта, требуется каталог с привязанным платёжным аккаунтом.
+> Тарифы (официальный прайс, снапшот 03.09.2025): синхронные запросы — 480 ₽/1000 (вкл. НДС),
+> отложенные — 25 ₽/1000; free tier на API v2 не распространяется. Одно исследование — десятки запросов.
 
 ## Запуск
 
 ```bash
-php .opencode/skills/yandex-wordstat/wordstat.php [опции] <фраза>
+php wordstat.php [опции] <фраза>
 ```
 
 ### Обязательный параметр
 
-- `фраза` — поисковый запрос для анализа (в кавычках если есть пробелы)
+- `фраза` — поисковый запрос для анализа (в кавычках если есть пробелы; до 400 символов)
 
 ### Опции
 
 | Опция | Сокращение | Описание | Значения | По умолчанию |
 |-------|------------|----------|----------|--------------|
-| `--geo` | `-g` | Регион поиска | ID региона (например: 1 - Москва, 2 - СПб) | без региона |
-| `--type` | `-t` | Тип отчёта | `freq`, `similar`, `history` | `freq` |
-| `--limit` | `-l` | Лимит записей | число (например: 10, 20, 50) | все записи |
+| `--geo` | `-g` | Регион поиска | ID региона (например: 1 - Москва, 2 - СПб, 225 - Россия) | без региона |
+| `--type` | `-t` | Тип отчёта | `freq`, `similar`, `history`, `regions` | `freq` |
+| `--limit` | `-l` | Лимит записей | freq/similar: 1–2000; regions: 1–50 | 50 (regions: 20) |
 | `--period` | `-p` | Период для history | `daily`, `weekly`, `monthly` | `monthly` |
-| `--count` | `-c` | Количество периодов | число (для history) | 12 |
+| `--count` | `-c` | Количество периодов для history | число (daily: максимум 59) | 12 |
 
 ### Типы отчётов
 
-| Параметр | Описание |
-|----------|----------|
-| `freq` | Частотность фразы (по умолчанию) |
-| `similar` | Похожие запросы |
-| `history` | Динамика показов (день/неделя/месяц) |
+| Тип | Метод API | Содержание |
+|-----|-----------|------------|
+| `freq` | getTop | Частотность фразы и топ запросов с ней (последние 30 дней) |
+| `similar` | getTop (associations) | Похожие/ассоциированные запросы |
+| `history` | getDynamics | Динамика показов (день/неделя/месяц) |
+| `regions` | getRegionsDistribution | Региональное распределение интереса (count, share, affinityIndex) |
 
-### Примеры
+### Правила окон дат для history (ограничения API)
 
-```bash
-# Частотность фразы
-php .opencode/skills/yandex-wordstat/wordstat.php "купить ноутбук"
+- `daily`: только последние 60 дней (клиент ограничивает 59 днями).
+- `weekly`: понедельник–воскресенье, неделя должна быть завершена.
+- `monthly`: 1-е число — последний день, месяц должен быть завершён.
+- Клиент сам строит валидные окна по `--count`; при ошибке окна снапает даты и сообщает о сдвиге.
+  Текущие незавершённые неделю/месяц API не отдаёт.
 
-# Частотность для Москвы (geo=1)
-php .opencode/skills/yandex-wordstat/wordstat.php -g 1 "веб-разработка"
+## Настройка (единожды)
 
-# Похожие запросы
-php .opencode/skills/yandex-wordstat/wordstat.php --type similar "seo продвижение"
+Конфиг ищется в порядке: переменные окружения `YANDEX_WORDSTAT_API_KEY` +
+`YANDEX_WORDSTAT_FOLDER_ID` → `wordstat_config.json` в текущей директории →
+`wordstat_config.json` в каталоге скилла → в корне репозитория (раскладка TasK).
+Общий конфиг в каталоге скилла позволяет всем агентам, использующим эту установку,
+работать без ручной настройки из любой рабочей директории.
 
-# Динамика по дням за 30 дней
-php .opencode/skills/yandex-wordstat/wordstat.php -t history -p daily -c 30 "opencode"
+Если ключа ещё нет:
 
-# Динамика по неделям за 8 недель
-php .opencode/skills/yandex-wordstat/wordstat.php -t history -p weekly -c 8 "ai"
+1. Откройте https://console.yandex.cloud/ — выберите/создайте каталог; к облаку должен быть
+   привязан платёжный аккаунт (billing).
+2. Создайте сервисный аккаунт с ролью `search-api.webSearch.user` (роль назначается
+   именно сервисному аккаунту, не личному пользователю).
+3. У сервисного аккаунта: «Создать новый ключ» → «API-ключ», scope `yc.search-api.execute`.
+4. Положите `wordstat_config.json` в каталог скилла (для всех агентов этой установки)
+   или в текущую директорию (локально):
 
-# Топ-20 похожих запросов
-php .opencode/skills/yandex-wordstat/wordstat.php -t similar -l 20 "маркетинг"
+```json
+{
+  "api_key": "AQVN...",
+  "folder_id": "b1g..."
+}
 ```
 
-## Результат
+Секретные файлы (`wordstat_config.json`, `wordstat_reports/`) автоматически добавляются в `.gitignore`
+каталога скилла и текущего каталога (если он вне скилла). Ключ не логируется и не выводится в отчёты.
 
-`wordstat_reports/YYYY-MM-DD/`:
-- `wordstat_YYYY-MM-DD_HH-MM-SS.csv` / `.md` — данные Wordstat
+## Структура скилла
 
-### Поля в отчёте freq/similar
+- `SKILL.md` — инструкция (этот файл).
+- `wordstat.php` — CLI, `WordstatClient.php` — клиент Yandex Search API v2.
+- `wordstat_config.example.json` — пример конфига (без секретов).
+- `templates/report.md` — шаблон Markdown-отчёта по частотностям.
+- `references/api.md` — справка по API v2: пути, wire-формат, окна дат, тарифы, ошибки.
 
-| Поле | Описание |
-|------|----------|
-| `phrase` | Поисковая фраза |
-| `shows` | Показы за месяц |
+## Примеры
 
-### Поля в отчёте history
+```bash
+php wordstat.php "сапольски лекции"
+php wordstat.php -g 225 "веб-разработка"
+php wordstat.php -t similar -l 20 "seo продвижение"
+php wordstat.php -t history -p monthly -c 12 "сапольски"
+php wordstat.php -t regions -l 20 "доставка цветов"
+```
 
-| Поле | Описание |
-|------|----------|
-| `date` | Дата (YYYY-MM-DD) |
-| `shows` | Показы |
-| `share` | Доля от всех запросов (%) |
+## Отчёты
 
-## Требования
+CSV и Markdown в `wordstat_reports/` текущей директории (имена с timestamp).
 
-- Приложение Яндекс.OAuth с доступом к API Вордстата
-- Токен авторизации
+## Ошибки
 
-## Ограничения API
+- Нет конфига/плейсхолдеры — скилл выводит инструкцию и не делает запросов.
+- 401/403 — проверьте ключ, роль `search-api.webSearch.user`, scope `yc.search-api.execute`, billing.
+- 429/5xx — автоматический retry с backoff (до 3 попыток, уважается Retry-After).
 
-⚠️ API Вордстата имеет лимиты на количество запросов. При частом использовании возможно временное ограничение.
+## Источники
+
+- Официально: https://yandex.cloud/ru/docs/search-api/ (Wordstat API: TopRequests, Dynamics, Regions, GetRegionsTree); переход со старого API: https://yandex.ru/support2/wordstat/ru/content/api-wordstat
+- Референс-реализация (MIT): https://github.com/stufently/yandex-mcp (packages/yandex-wordstat-mcp)
+- Исходный репозиторий скилла: https://github.com/prikotov/yandex-wordstat (старая OAuth-версия; обновлена в TasK 13.11.2026)

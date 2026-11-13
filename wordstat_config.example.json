@@ -1,4 +1,4 @@
 {
-    "client_id": "YOUR_CLIENT_ID",
-    "client_secret": "YOUR_CLIENT_SECRET"
+    "api_key": "YOUR_API_KEY",
+    "folder_id": "YOUR_FOLDER_ID"
 }
